@@ -1,6 +1,14 @@
 # slugline
 
-A Bitcoin transaction builder and searcher for rune-based fee payment systems. This tool allows users to create Bitcoin transactions where fees are paid using rune-containing UTXOs, and provides a searcher service that can bump transaction fees via CPFP (Child Pays For Parent).
+A carpool for Bitcoin Transactions. Pay your way with Runes!
+
+Alice wants to make a Bitcoin transaction but doesn't want to pay transaction fees with Bitcoin. She wants to use a Rune to pay her fees. So she makes a transaction that pays zero fee. She attaches an input that contains a specific Rune. She also makes an output that is a keyless ephemeral anchor (p2a). She sends it to one or more `searchers`. Bob is a searcher. He sees the transaction and decides it's worth paying Alice's fee to claim the rune. He makes a transaction that CPFP Alice's transaction by spending the p2a output. This claims the rune and pulls Alice's transaction into a block.
+
+While in theory a market can be made by any spenders and searchers that can agree on what Rune to use, I think it would make the most sense to have everyone standardize on the same rune to use for this. Probably something like UNCOMMON•GOODS because its easy to calculate the cost of minting that rune vs buying it, so slugline participants can calculate if it makes sense to do these kinds of deals.
+
+Other options might be miners (or groups of miners) creating their own rune that is usable for block inclusion. This could have the effect of selling future blockspace in a tokenized way, and then redeeming that blockspace claim in-band.
+
+The current implementation has the searcher run a web service. I think it would make more sense to plug into a broadcast network like NOSTR. Either I'll do that or if you want to make a PR, I'm thrilled to review it!
 
 ## Overview
 
@@ -274,18 +282,12 @@ total_fee = total_vsize * fee_rate
 
 ## Future Improvements
 
+- Rune Change (right now the spender sends ALL the runes in an input, they should get change)
 - Support for multiple rune UTXOs
 - Dynamic fee estimation
 - Better UTXO selection for searcher
-- Configurable fee rates
-- WebSocket support for real-time updates
-- Support for different rune types
-- Batched package submissions
+
 
 ## License
 
-[Your License Here]
-
-## Contributing
-
-[Your Contributing Guidelines Here]
+MIT
