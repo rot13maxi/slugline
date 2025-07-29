@@ -30,6 +30,10 @@ struct Cli {
     #[arg(long, value_enum, default_value = "mainnet")]
     network: Network,
 
+    /// Ord server URL
+    #[arg(long, default_value = "http://localhost")]
+    ord_server: String,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -81,6 +85,7 @@ fn main() {
                 cli.bitcoind_user.as_deref(),
                 cli.bitcoind_password.as_deref(),
                 &format!("{:?}", cli.network).to_lowercase(),
+                &cli.ord_server,
                 &btc_address,
                 &runes_address,
                 &destination_address,
@@ -93,6 +98,7 @@ fn main() {
                 cli.bitcoind_user.as_deref(),
                 cli.bitcoind_password.as_deref(),
                 &format!("{:?}", cli.network).to_lowercase(),
+                &cli.ord_server,
                 &wallet,
                 fee_rate,
             );

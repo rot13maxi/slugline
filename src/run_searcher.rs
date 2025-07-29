@@ -33,6 +33,7 @@ struct AppState {
     network: Network,
     wallet_name: String,
     fee_rate: f64,
+    ord_server: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -104,9 +105,9 @@ fn validate_transaction(tx: &Transaction) -> Result<(), String> {
     Ok(())
 }
 
-async fn fetch_utxo_info(outpoint: &OutPoint, network: Network) -> Result<Utxo, Box<dyn Error + Send + Sync>> {
+async fn fetch_utxo_info(outpoint: &OutPoint, network: Network, ord_server: &str) -> Result<Utxo, Box<dyn Error + Send + Sync>> {
     // First, fetch the transaction to get the output script
-    let url = format!("http://localhost/tx/{}", outpoint.txid);
+    let url = format!("{}/tx/{}", ord_server, outpoint.txid);
     info!("Fetching transaction details from: {}", url);
     let client = reqwest::Client::new();
     let response = client
@@ -144,7 +145,7 @@ async fn fetch_utxo_info(outpoint: &OutPoint, network: Network) -> Result<Utxo, 
         .map_err(|e| format!("Failed to derive address from script: {}", e))?;
     
     // Now fetch the UTXO info for this specific output
-    let url = format!("http://localhost/outputs/{}", address);
+    let url = format!("{}/outputs/{}", ord_server, address);
     info!("Fetching UTXO info from: {}", url);
     let response = client
         .get(&url)
@@ -165,14 +166,14 @@ async fn fetch_utxo_info(outpoint: &OutPoint, network: Network) -> Result<Utxo, 
         .ok_or_else(|| format!("UTXO not found for outpoint: {}", outpoint_str).into())
 }
 
-async fn validate_rune_input(tx: &Transaction, network: Network) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn validate_rune_input(tx: &Transaction, network: Network, ord_server: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
     if tx.input.is_empty() {
         return Err("Transaction has no inputs".into());
     }
     
     // Check the last input for runes
     let last_input = &tx.input[tx.input.len() - 1];
-    let utxo_info = fetch_utxo_info(&last_input.previous_output, network).await?;
+    let utxo_info = fetch_utxo_info(&last_input.previous_output, network, ord_server).await?;
     
     if !utxo_info.runes.contains_key(RUNE_NAME) {
         return Err(format!("Last input does not contain {} rune", RUNE_NAME).into());
@@ -304,7 +305,7 @@ async fn handle_submit_psbt(
     
     // Validate rune input
     info!("Validating rune input...");
-    if let Err(e) = validate_rune_input(&tx, state.network).await {
+    if let Err(e) = validate_rune_input(&tx, state.network, &state.ord_server).await {
         error!("Rune validation failed: {}", e);
         return Ok(Json(SubmitPsbtResponse {
             success: false,
@@ -514,6 +515,7 @@ pub fn run(
     bitcoind_user: Option<&str>,
     bitcoind_password: Option<&str>,
     network: &str,
+    ord_server: &str,
     wallet_name: &str,
     fee_rate: f64,
 ) {
@@ -536,6 +538,7 @@ pub fn run(
         network: parse_network(network),
         wallet_name: wallet_name.to_string(),
         fee_rate,
+        ord_server: ord_server.to_string(),
     });
     
     // Build the runtime

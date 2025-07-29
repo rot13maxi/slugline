@@ -154,8 +154,8 @@ fn build_transaction(
     Ok(tx)
 }
 
-fn fetch_utxos(address: &str) -> Result<Vec<Utxo>, Box<dyn Error>> {
-    let url = format!("http://localhost/outputs/{}", address);
+fn fetch_utxos(ord_server: &str, address: &str) -> Result<Vec<Utxo>, Box<dyn Error>> {
+    let url = format!("{}/outputs/{}", ord_server, address);
     println!("Fetching UTXOs from: {}", url);
     
     let client = reqwest::blocking::Client::new();
@@ -178,8 +178,8 @@ fn fetch_utxos(address: &str) -> Result<Vec<Utxo>, Box<dyn Error>> {
     Ok(unspent_utxos)
 }
 
-fn fetch_rune_utxos(address: &str) -> Result<Vec<Utxo>, Box<dyn Error>> {
-    let utxos = fetch_utxos(address)?;
+fn fetch_rune_utxos(ord_server: &str, address: &str) -> Result<Vec<Utxo>, Box<dyn Error>> {
+    let utxos = fetch_utxos(ord_server, address)?;
     
     // Filter to only UTXOs containing our target rune
     let rune_utxos: Vec<Utxo> = utxos.into_iter()
@@ -217,6 +217,7 @@ pub fn run(
     _bitcoind_user: Option<&str>,
     _bitcoind_password: Option<&str>,
     network: &str,
+    ord_server: &str,
     btc_address: &str,
     runes_address: &str,
     destination_address: &str,
@@ -230,7 +231,7 @@ pub fn run(
     println!("Network: {}", network);
     
     // Fetch BTC UTXOs
-    match fetch_utxos(btc_address) {
+    match fetch_utxos(ord_server, btc_address) {
         Ok(utxos) => {
             println!("Found {} UTXOs", utxos.len());
             
@@ -251,7 +252,7 @@ pub fn run(
                     
                     // Fetch Rune UTXOs
                     println!("\nFetching rune UTXOs from runes address...");
-                    match fetch_rune_utxos(runes_address) {
+                    match fetch_rune_utxos(ord_server, runes_address) {
                         Ok(rune_utxos) => {
                             println!("Found {} UTXOs containing {}", rune_utxos.len(), RUNE_NAME);
                             
